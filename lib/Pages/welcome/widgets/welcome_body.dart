@@ -34,7 +34,7 @@ class WelcomeBody extends StatelessWidget {
                 Container(
                   margin: EdgeInsets.only(bottom: 30),
                   height: 1,
-                  width: 300,
+                  width: 340,
                   decoration: BoxDecoration(
                     color: Color(MyColor.white)
                   ),
@@ -59,7 +59,7 @@ class WelcomeBody extends StatelessWidget {
                 const SizedBox(height: 20,),
                 ElevatedButton(
                   onPressed: () {
-                    //TODO: dieu huong
+                    context.goNamed(RouterName.register);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(MyColor.button),

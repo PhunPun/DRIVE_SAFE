@@ -1,6 +1,8 @@
 import 'package:drive_safe/apps/colors/colors.dart';
+import 'package:drive_safe/apps/router/router_name.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginBody extends StatelessWidget {
   const LoginBody({super.key});
@@ -16,7 +18,7 @@ class LoginBody extends StatelessWidget {
           ),
           const SizedBox(height: 30),
           Text(
-            'Nhập email và password để đăng nhập',
+            'Nhập email và mật khẩu để đăng nhập',
             style: TextStyle(
               color: const Color(MyColor.white),
               fontSize: 17,
@@ -31,22 +33,22 @@ class LoginBody extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Email',
                 hintStyle: TextStyle(
-                  color: Color(0xFFC9D6DF)
+                  color: Color(MyColor.grey)
                 ),
                 contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                 filled: true,
-                fillColor: Color(0xFFFFFFFF),
+                fillColor: Color(MyColor.white),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(33),
                   borderSide: BorderSide(
-                    color: Color(0xFF6499E9),
+                    color: Color(MyColor.blued),
                     width: 1,
                   )
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(33),
                   borderSide: BorderSide(
-                    color: Color(0xFF52616B),
+                    color: Color(MyColor.grey),
                     width: 0.5,
                   )
                 )
@@ -58,24 +60,24 @@ class LoginBody extends StatelessWidget {
             margin: EdgeInsets.only(top: 10, right: 49, left: 49),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Password',
+                hintText: 'Mật khẩu',
                 hintStyle: TextStyle(
-                  color: Color(0xFFC9D6DF)
+                  color: Color(MyColor.grey)
                 ),
                 contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                 filled: true,
-                fillColor: Color(0xFFFFFFFF),
+                fillColor: Color(MyColor.white),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(33),
                   borderSide: BorderSide(
-                    color: Color(0xFF6499E9),
+                    color: Color(MyColor.blued),
                     width: 1,
                   )
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(33),
                   borderSide: BorderSide(
-                    color: Color(0xFF52616B),
+                    color: Color(MyColor.grey),
                     width: 0.5,
                   )
                 )
@@ -123,7 +125,7 @@ class LoginBody extends StatelessWidget {
           const SizedBox(height: 20),
           Container(
             height: 1,
-            width: 300,
+            width: 340,
             color: Color(MyColor.button),
           ),
           const SizedBox(height: 30),
@@ -156,11 +158,16 @@ class LoginBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10,),
-              Text(
-                'Đăng kí',
-                style: TextStyle(
-                  color: Color(MyColor.blued),
-                  fontSize: 11,
+              InkWell(
+                onTap: () {
+                  context.goNamed(RouterName.register);
+                },
+                child: Text(
+                  'Đăng kí',
+                  style: TextStyle(
+                    color: Color(MyColor.blued),
+                    fontSize: 11,
+                  ),
                 ),
               )
             ],
