@@ -1,3 +1,4 @@
+import 'package:drive_safe/Pages/home/home_page.dart';
 import 'package:drive_safe/Pages/login/login_page.dart';
 import 'package:drive_safe/Pages/register/register_page.dart';
 import 'package:drive_safe/Pages/welcome/welcome_page.dart';
@@ -12,7 +13,7 @@ class RouterCustum{
       path: '/',
       name: RouterName.welcome,
       builder: (BuildContext context, GoRouterState state) {
-        return const WelcomePage();
+        return const HomePage();
       },
       routes: <RouteBase>[
         GoRoute(
