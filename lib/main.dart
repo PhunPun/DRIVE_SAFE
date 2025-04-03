@@ -1,16 +1,28 @@
-import 'package:drive_safe/Pages/my_app.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
+import 'apps/router/router.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent, // Trong suốt
-    statusBarIconBrightness: Brightness.dark, // Đổi màu icon (light = icon trắng, dark = icon đen)
-    systemNavigationBarColor: Colors.transparent, // Làm trong suốt hoặc đổi thành màu nền
-  systemNavigationBarDividerColor: Colors.transparent,
-  ));
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: themeProvider.currentTheme,
+      routerConfig: RouterCustum.router, 
+    );
+  }
+}

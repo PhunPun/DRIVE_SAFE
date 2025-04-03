@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 class WelcomeHeader extends StatelessWidget {
   const WelcomeHeader({super.key});
@@ -9,13 +8,14 @@ class WelcomeHeader extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 30,),
+        const SizedBox(height: 50,),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              'assets/images/logo.svg',
-            )
+            Image.asset(
+              'assets/images/logo_DS.png',
+              width: 350,
+            ), 
           ],
         ),
       ],

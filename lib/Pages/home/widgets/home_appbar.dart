@@ -7,9 +7,19 @@ class HomeAppbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Container(
-        child: SvgPicture.asset(
-          'assets/images/DRIVESAFE.svg'
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SvgPicture.asset(
+              'assets/images/DRIVESAFE.svg',
+            ),
+            Image.asset(
+              'assets/images/logo_DS.png',
+              height: 40, 
+            ),
+          ],
         ),
       ),
     );

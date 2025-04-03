@@ -1,14 +1,19 @@
-import 'package:drive_safe/apps/colors/colors.dart';
+import 'package:drive_safe/apps/theme/theme.dart';
+import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 import 'package:drive_safe/apps/router/router_name.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class WelcomeBody extends StatelessWidget {
   const WelcomeBody({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -18,25 +23,22 @@ class WelcomeBody extends StatelessWidget {
             Column(
               children: [
                 SvgPicture.asset(
-                  'assets/images/DRIVESAFE.svg'
+                  'assets/images/DRIVESAFE.svg',
+                  width: 300,
                 ),
                 Container(
-                  margin: EdgeInsets.all(10),
+                  margin: const EdgeInsets.all(10),
                   child: Text(
                     'TỈNH TÁO MỌI NẺO ĐƯỜNG',
-                    style: TextStyle(
-                      color: const Color(MyColor.white),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTextStyles.title(isDarkMode),
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(bottom: 30),
+                  margin: const EdgeInsets.only(bottom: 30),
                   height: 1,
                   width: 340,
                   decoration: BoxDecoration(
-                    color: Color(MyColor.white)
+                    color: isDarkMode ? MyColor.darkCard : MyColor.white,
                   ),
                 ),
                 ElevatedButton(
@@ -44,34 +46,26 @@ class WelcomeBody extends StatelessWidget {
                     context.goNamed(RouterName.login);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(MyColor.button),
-                    minimumSize: Size(259, 59)
+                    backgroundColor: MyColor.button,
+                    minimumSize: const Size(259, 59),
                   ),
                   child: Text(
                     'ĐĂNG NHẬP',
-                    style: TextStyle(
-                      color: Color(MyColor.white),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 30,
-                    ),
+                    style: AppTextStyles.textButton(isDarkMode),
                   ),
                 ),
-                const SizedBox(height: 20,),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     context.goNamed(RouterName.register);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(MyColor.button),
-                    minimumSize: Size(259, 59),
+                    backgroundColor: MyColor.button,
+                    minimumSize: const Size(259, 59),
                   ),
                   child: Text(
                     'ĐĂNG KÍ',
-                    style: TextStyle(
-                      color: Color(MyColor.white),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 30,
-                    ),
+                    style: AppTextStyles.textButton(isDarkMode),
                   ),
                 ),
               ],

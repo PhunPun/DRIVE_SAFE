@@ -1,72 +1,90 @@
-import 'package:drive_safe/apps/colors/colors.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:drive_safe/apps/theme/theme.dart';
+import 'package:provider/provider.dart';
+import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 
 class HistoryPage extends StatelessWidget {
-  const HistoryPage ({super.key});
+  const HistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Icon(Icons.history,
-              size: 42,
-              color: Color(MyColor.white),
-            ),
-            const SizedBox(width: 10,),
-            Text(
-              'Lịch sử',
-              style: TextStyle(
-                fontSize: 32,
-                color: Color(MyColor.white),
-                fontWeight: FontWeight.w600
+Widget build(BuildContext context) {
+  final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+
+  return Scaffold(
+    body: Container(
+      decoration: BoxDecoration(
+        gradient: Provider.of<ThemeProvider>(context).backgroundGradient,
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.history, size: 42, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Lịch Sử',
+                    style: AppTextStyles.title(isDarkMode),
+                  ),
+                ],
               ),
-            )
-          ],
-        ),
-        const SizedBox(height: 30,),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/icons/time.svg',
-              width: 50,
-              height: 50,
-            ),
-            const SizedBox(width: 15,),
-            Text(
-              'Chi tiết thời gian',
-              style: TextStyle(
-                fontSize: 24,
-                color: Color(MyColor.black),
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 40),
+              Expanded(
+                child: ListView(
+                  children: [
+                    _buildHistoryItem(
+                      iconPath: 'assets/icons/time.svg',
+                      title: 'Chi tiết thời gian',
+                      isDarkMode: isDarkMode,
+                    ),
+                    _buildHistoryItem(
+                      iconPath: 'assets/icons/alert.svg',
+                      title: 'Tần suất cảnh báo',
+                      isDarkMode: isDarkMode,
+                    ),
+                  ],
+                ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 50,),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/icons/loa.svg',
-              width: 50,
-              height: 50,
-            ),
-            const SizedBox(width: 15,),
-            Text(
-              'Tần suất cảnh báo',
-              style: TextStyle(
-                fontSize: 24,
-                color: Color(MyColor.black),
-                fontWeight: FontWeight.w600,
-              ),
-            )
-          ],
-        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildHistoryItem({required String iconPath, required String title, required bool isDarkMode}) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 20),
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+    decoration: BoxDecoration(
+      color: isDarkMode ? MyColor.darkCard : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 5,
+          offset: const Offset(0, 3),
+        )
       ],
-    );
-  }
+    ),
+    child: Row(
+      children: [
+        SvgPicture.asset(iconPath, width: 40, height: 40),
+        const SizedBox(width: 15),
+        Text(
+          title,
+          style: AppTextStyles.settingButton(isDarkMode),
+        ),
+        const Spacer(),
+        const Icon(Icons.arrow_forward_ios, size: 20, color: Colors.grey),
+      ],
+    ),
+  );
+}
 }
