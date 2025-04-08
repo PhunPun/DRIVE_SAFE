@@ -3,9 +3,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:drive_safe/apps/theme/theme.dart';
 import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
+import '../drowsiness/drowsiness_screen.dart';
+
 
 class SettingPage extends StatelessWidget {
+  
   const SettingPage({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +70,21 @@ class SettingPage extends StatelessWidget {
                             },
                           ),
                         ),
-                        _buildSettingItem(
-                          context,
-                          iconPath: 'assets/icons/vuong.svg',
-                          title: 'Mức độ nhận diện',
+                        GestureDetector(
+                          onTap: () {
+
+                             Navigator.push(
+                              context,
+                                MaterialPageRoute(
+                                  builder: (context) => DrowsinessScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildSettingItem(
+                            context,
+                            iconPath: 'assets/icons/vuong.svg',
+                            title: 'Mức độ nhận diện',
+                          ),
                         ),
                       ],
                     ),

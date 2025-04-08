@@ -2,11 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 import 'apps/router/router.dart';
+import 'package:camera/camera.dart';
+import 'package:drive_safe/apps/theme/providers/camera_provider.dart';
 
-void main() {
+late List<CameraDescription> cameras;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  cameras = await availableCameras();
+
+  // ✅ Dùng camera trước (front camera)
+  final frontCamera = cameras.firstWhere(
+    (camera) => camera.lensDirection == CameraLensDirection.front,
+    orElse: () => throw Exception('Không tìm thấy camera trước'),
+  );
+  
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => CameraProvider()..setCamera(frontCamera)),
+      ],
       child: const MyApp(),
     ),
   );
