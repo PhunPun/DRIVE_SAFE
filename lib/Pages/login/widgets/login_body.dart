@@ -1,13 +1,90 @@
 import 'package:drive_safe/apps/theme/theme.dart';
 import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 import 'package:drive_safe/apps/router/router_name.dart';
+import 'package:drive_safe/service/api_service.dart';
+import 'package:drive_safe/service/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
-class LoginBody extends StatelessWidget {
+class LoginBody extends StatefulWidget {
   const LoginBody({super.key});
+
+  @override
+  State<LoginBody> createState() => _LoginBodyState();
+}
+
+class _LoginBodyState extends State<LoginBody> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final AuthService _googleAuth = AuthService();
+  bool _isLoginLoading = false;
+  bool _isGoogleLoading = false;
+  bool _showError = false;
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+  Future<void> _login() async {
+    setState(() {
+      _isLoginLoading = true;
+      _showError = false;
+    });
+    try {
+      final response = await ApiService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // Lưu token và chuyển hướng
+      final token = response['token'];
+      debugPrint('Login successful, token: $token');
+      
+      //await SecureStorage.saveToken(token);
+      
+      // Chuyển hướng sau khi đăng nhập thành công
+      if (mounted) {
+        context.goNamed(RouterName.home);
+      }
+    } catch (e) {
+      setState(() => _showError = true);
+      debugPrint('Login error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đăng nhập thất bại: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoginLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    await _googleAuth.signOutFromGoogle();
+    setState(() => _isGoogleLoading = true);
+    
+    try {
+      final userCredential = await _googleAuth.signInWithGoogle();
+      if (userCredential != null && mounted) {
+        context.goNamed(RouterName.home); // Chuyển đến màn hình chính
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng nhập Google thành công!')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _showError = true;
+      debugPrint('Login google error: $e');
+      });
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,19 +106,17 @@ class LoginBody extends StatelessWidget {
           ),
           const SizedBox(height: 5),
 
-          _buildTextField(context, hintText: 'Email'),
+          _buildTextField(context, hintText: 'Email', controller: _emailController),
           const SizedBox(height: 10),
 
-          _buildTextField(context, hintText: 'Mật khẩu', obscureText: true),
+          _buildTextField(context, hintText: 'Mật khẩu', obscureText: true, controller: _passwordController),
           const SizedBox(height: 5),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text(
-                'Email hoặc mật khẩu không đúng!',
-                style: AppTextStyles.warningText(),
-              ),
+              if (_showError) Text('Email hoặc mật khẩu không đúng!', style: AppTextStyles.warningText()),
+              const Spacer(),
               Text(
                 'Quên mật khẩu?',
                 style: AppTextStyles.resetPassText(),
@@ -51,7 +126,7 @@ class LoginBody extends StatelessWidget {
           const SizedBox(height: 5),
 
           ElevatedButton(
-            onPressed: () {},
+            onPressed: _isLoginLoading ? null : _login,
             style: ButtonStyles.buttonOne(isDarkMode),
             child: Text(
               'ĐĂNG NHẬP',
@@ -68,7 +143,7 @@ class LoginBody extends StatelessWidget {
           const SizedBox(height: 30),
 
           ElevatedButton(
-            onPressed: () {},
+            onPressed: _isGoogleLoading ? null : _signInWithGoogle,
             style: ElevatedButton.styleFrom(
               backgroundColor: isDarkMode ? MyColor.darkCard : MyColor.white,
               minimumSize: const Size(300, 40),
@@ -104,7 +179,11 @@ class LoginBody extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(BuildContext context, {required String hintText, bool obscureText = false}) {
+  Widget _buildTextField(BuildContext context, {
+    required String hintText,
+    bool obscureText = false,
+    required TextEditingController controller,
+  }) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
 
@@ -112,6 +191,7 @@ class LoginBody extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 49),
       child: TextField(
+        controller: controller,
         obscureText: obscureText,
         decoration: InputDecoration(
           hintText: hintText,

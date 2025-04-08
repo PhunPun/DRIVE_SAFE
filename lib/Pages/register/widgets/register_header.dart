@@ -14,8 +14,8 @@ class RegisterHeader extends StatelessWidget {
           children: [
             Image.asset(
               'assets/images/logo_DS.png',
-              width: 250,
-              height: 250,
+              width: 150,
+              height: 150,
             )
           ],
         ),
