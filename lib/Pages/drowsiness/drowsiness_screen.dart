@@ -20,7 +20,7 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
   String _processedImage = '';
   bool _isDetecting = false;
 
-  final String apiUrl = 'http://192.168.5.85:5000/api/detect_drowsiness';
+  final String apiUrl = 'http://192.168.0.101:5000/api/detect_drowsiness';
 
   @override
   void initState() {
