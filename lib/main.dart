@@ -1,3 +1,5 @@
+import 'package:camera/camera.dart';
+import 'package:drive_safe/apps/theme/providers/camera_provider.dart';
 import 'package:drive_safe/service/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import 'apps/router/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+late List<CameraDescription> cameras;
 void main() async {
   try {
     await ApiService.checkConnection();
@@ -16,13 +19,25 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+  WidgetsFlutterBinding.ensureInitialized();
+  cameras = await availableCameras();
+
+  // ✅ Dùng camera trước (front camera)
+  final frontCamera = cameras.firstWhere(
+    (camera) => camera.lensDirection == CameraLensDirection.front,
+    orElse: () => throw Exception('Không tìm thấy camera trước'),
   );  
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: const MyApp(),
-    ),
-  );
+  MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider(create: (_) => CameraProvider()..setCamera(frontCamera)),
+    ],
+    child: const MyApp(),
+  ),
+);
+
 }
 
 class MyApp extends StatelessWidget {

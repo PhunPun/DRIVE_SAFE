@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.5.93:3002';
+  static const String baseUrl = 'http://192.168.1.91:3002';
 
   // Helper method to create headers
   static Map<String, String> getHeaders(String? token) {

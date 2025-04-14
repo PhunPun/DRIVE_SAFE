@@ -1,3 +1,4 @@
+import 'package:drive_safe/Pages/drowsiness/drowsiness_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -66,10 +67,21 @@ class SettingPage extends StatelessWidget {
                             },
                           ),
                         ),
-                        _buildSettingItem(
-                          context,
-                          iconPath: 'assets/icons/vuong.svg',
-                          title: 'Mức độ nhận diện',
+                        GestureDetector(
+                          onTap: () {
+
+                             Navigator.push(
+                              context,
+                                MaterialPageRoute(
+                                  builder: (context) => DrowsinessScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildSettingItem(
+                            context,
+                            iconPath: 'assets/icons/vuong.svg',
+                            title: 'Mức độ nhận diện',
+                          ),
                         ),
                       ],
                     ),
