@@ -4,13 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class DetectionBox {
-  final double x;
-  final double y;
-  final double width;
-  final double height;
+  final double x, y, width, height;
   final String label;
   final double confidence;
 
@@ -51,6 +48,7 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
   List<DetectionBox> _boxes = [];
   Timer? _detectionTimer;
   bool _isAlarmPlaying = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   final String apiUrl = 'http://192.168.5.47:5000/api/detect_drowsiness';
 
@@ -67,16 +65,10 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
         (camera) => camera.lensDirection == CameraLensDirection.front,
       );
 
-      _controller = CameraController(
-        frontCamera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
+      _controller = CameraController(frontCamera, ResolutionPreset.medium, enableAudio: false);
       await _controller!.initialize();
-      
+
       if (!mounted) return;
-      
       setState(() {
         _cameraInitialized = true;
         _status = 'Camera đã sẵn sàng';
@@ -85,16 +77,10 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
 
       _startDetectionLoop();
 
-    } on CameraException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _status = 'Lỗi camera: ${e.description}';
-        _showRetryButton = true;
-      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _status = 'Lỗi không xác định: $e';
+        _status = 'Lỗi camera: $e';
         _showRetryButton = true;
       });
     }
@@ -109,7 +95,7 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
   }
 
   Future<void> _detectDrowsiness() async {
-    if (_isDetecting || !_cameraInitialized) return;
+    if (_isDetecting || !_cameraInitialized || !mounted) return;
 
     setState(() {
       _isDetecting = true;
@@ -128,18 +114,19 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
         body: jsonEncode({'image': base64Image}),
       ).timeout(const Duration(seconds: 10));
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
-        
         if (result['success'] == true) {
           final drowsyDetected = result['drowsy_detected'] ?? false;
           final confidence = result['confidence'] ?? 0.0;
-          
+
           setState(() {
             _status = drowsyDetected
                 ? '⚠️ Buồn ngủ phát hiện (${(confidence * 100).toStringAsFixed(1)}%)'
                 : '✅ Bình thường';
-            
+
             if (drowsyDetected && !_isAlarmPlaying) {
               _playAlarm();
             } else if (!drowsyDetected && _isAlarmPlaying) {
@@ -164,49 +151,56 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
       }
     } catch (e) {
       setState(() {
-        _status = 'Lỗi: ${e.toString()}';
+        _status = 'Lỗi: $e';
       });
     } finally {
-      setState(() {
-        _isDetecting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isDetecting = false;
+        });
+      }
     }
   }
 
-  void _playAlarm() {
-    // Implement alarm sound here
-    setState(() {
-      _isAlarmPlaying = true;
-    });
+  void _playAlarm() async {
+    if (_isAlarmPlaying) return;
+
+    try {
+      await _audioPlayer.play(AssetSource('sounds/alarm2.mp3'));
+      setState(() {
+        _isAlarmPlaying = true;
+      });
+    } catch (e) {
+      debugPrint('Lỗi phát âm thanh: $e');
+    }
   }
 
-  void _stopAlarm() {
-    // Stop alarm sound here
-    setState(() {
-      _isAlarmPlaying = false;
-    });
+  void _stopAlarm() async {
+    try {
+      await _audioPlayer.stop();
+      setState(() {
+        _isAlarmPlaying = false;
+      });
+    } catch (e) {
+      debugPrint('Lỗi dừng âm thanh: $e');
+    }
   }
 
   @override
   void dispose() {
     _detectionTimer?.cancel();
     _controller?.dispose();
-    _stopAlarm();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Phát hiện buồn ngủ'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Phát hiện buồn ngủ'), centerTitle: true),
       body: Column(
         children: [
-          Expanded(
-            child: _buildCameraPreview(),
-          ),
+          Expanded(child: _buildCameraPreview()),
           _buildStatusIndicator(),
           if (_showRetryButton)
             Padding(
@@ -262,7 +256,7 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
   Widget _buildStatusIndicator() {
     Color statusColor = Colors.black;
     IconData statusIcon = Icons.info;
-    
+
     if (_status.contains('Lỗi')) {
       statusColor = Colors.red;
       statusIcon = Icons.error;
