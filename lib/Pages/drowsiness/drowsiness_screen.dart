@@ -1,13 +1,42 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:drive_safe/apps/theme/providers/camera_provider.dart';
+
+class DetectionBox {
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+  final String label;
+  final double confidence;
+
+  DetectionBox({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    required this.label,
+    required this.confidence,
+  });
+
+  factory DetectionBox.fromJson(Map<String, dynamic> json) {
+    return DetectionBox(
+      x: json['x'].toDouble(),
+      y: json['y'].toDouble(),
+      width: json['width'].toDouble(),
+      height: json['height'].toDouble(),
+      label: json['label'],
+      confidence: json['confidence'].toDouble(),
+    );
+  }
+}
 
 class DrowsinessScreen extends StatefulWidget {
-  const DrowsinessScreen({super.key});
+  const DrowsinessScreen({Key? key}) : super(key: key);
 
   @override
   _DrowsinessScreenState createState() => _DrowsinessScreenState();
@@ -15,82 +44,80 @@ class DrowsinessScreen extends StatefulWidget {
 
 class _DrowsinessScreenState extends State<DrowsinessScreen> {
   CameraController? _controller;
-  late Future<void> _initializeControllerFuture;
-  String _status = 'Initializing...';
-  String _processedImage = '';
+  bool _cameraInitialized = false;
+  bool _showRetryButton = false;
+  String _status = 'Đang khởi tạo camera...';
   bool _isDetecting = false;
+  List<DetectionBox> _boxes = [];
+  Timer? _detectionTimer;
+  bool _isAlarmPlaying = false;
 
-  final String apiUrl = 'http://192.168.0.101:5000/api/detect_drowsiness';
+  final String apiUrl = 'http://192.168.5.47:5000/api/detect_drowsiness';
 
   @override
   void initState() {
     super.initState();
-    _initializeControllerFuture = Future.value();
-    _initializeCamera().then((_) {
-      _startAutoDetectLoop(); // 🔁 Bắt đầu kiểm tra liên tục sau khi khởi tạo camera
-    });
+    _initializeCamera();
   }
 
   Future<void> _initializeCamera() async {
     try {
-      final CameraDescription camera = Provider.of<CameraProvider>(context, listen: false).camera;
+      final cameras = await availableCameras();
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+      );
 
       _controller = CameraController(
-        camera,
+        frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
       );
 
-      _initializeControllerFuture = _controller!.initialize();
-      await _initializeControllerFuture;
-
-      if (_controller!.value.isInitialized) {
-        setState(() {
-          _status = 'Camera initialized';
-        });
-      } else {
-        setState(() {
-          _status = 'Error: Camera failed to initialize properly';
-        });
-      }
-    } catch (e) {
+      await _controller!.initialize();
+      
+      if (!mounted) return;
+      
       setState(() {
-        _status = 'Error initializing camera: $e';
+        _cameraInitialized = true;
+        _status = 'Camera đã sẵn sàng';
+        _showRetryButton = false;
+      });
+
+      _startDetectionLoop();
+
+    } on CameraException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _status = 'Lỗi camera: ${e.description}';
+        _showRetryButton = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _status = 'Lỗi không xác định: $e';
+        _showRetryButton = true;
       });
     }
   }
 
-  void _startAutoDetectLoop() async {
-    while (mounted) {
-      if (!_isDetecting && _controller != null && _controller!.value.isInitialized) {
-        await _detectDrowsiness();
+  void _startDetectionLoop() {
+    _detectionTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_cameraInitialized && !_isDetecting) {
+        _detectDrowsiness();
       }
-      await Future.delayed(const Duration(seconds: 5)); // Kiểm tra mỗi 5 giây
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
+    });
   }
 
   Future<void> _detectDrowsiness() async {
-    if (_isDetecting || _controller == null || !_controller!.value.isInitialized) return;
+    if (_isDetecting || !_cameraInitialized) return;
 
     setState(() {
       _isDetecting = true;
-      _status = 'Detecting...';
-      _processedImage = '';
+      _status = 'Đang phân tích...';
+      _boxes.clear();
     });
 
     try {
-      await _initializeControllerFuture;
-
-      if (_controller!.value.isPreviewPaused) {
-        await _controller!.resumePreview();
-      }
-
       final image = await _controller!.takePicture();
       final bytes = await File(image.path).readAsBytes();
       final base64Image = base64Encode(bytes);
@@ -99,24 +126,45 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'image': base64Image}),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
-        setState(() {
-          _status = result['drowsy_detected']
-              ? '😴 Drowsy Detected (Confidence: ${(result['confidence'] * 100).toStringAsFixed(2)}%)'
-              : '✅ No Drowsiness Detected';
-          _processedImage = result['processed_image'] ?? '';
-        });
+        
+        if (result['success'] == true) {
+          final drowsyDetected = result['drowsy_detected'] ?? false;
+          final confidence = result['confidence'] ?? 0.0;
+          
+          setState(() {
+            _status = drowsyDetected
+                ? '⚠️ Buồn ngủ phát hiện (${(confidence * 100).toStringAsFixed(1)}%)'
+                : '✅ Bình thường';
+            
+            if (drowsyDetected && !_isAlarmPlaying) {
+              _playAlarm();
+            } else if (!drowsyDetected && _isAlarmPlaying) {
+              _stopAlarm();
+            }
+
+            _boxes = result['boxes'] != null
+                ? (result['boxes'] as List)
+                    .map((boxJson) => DetectionBox.fromJson(boxJson))
+                    .toList()
+                : [];
+          });
+        } else {
+          setState(() {
+            _status = 'Lỗi phân tích: ${result['error'] ?? 'Không xác định'}';
+          });
+        }
       } else {
         setState(() {
-          _status = 'API Error: ${response.statusCode}';
+          _status = 'Lỗi kết nối (${response.statusCode})';
         });
       }
     } catch (e) {
       setState(() {
-        _status = 'Error during detection: $e';
+        _status = 'Lỗi: ${e.toString()}';
       });
     } finally {
       setState(() {
@@ -125,75 +173,124 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
     }
   }
 
+  void _playAlarm() {
+    // Implement alarm sound here
+    setState(() {
+      _isAlarmPlaying = true;
+    });
+  }
+
+  void _stopAlarm() {
+    // Stop alarm sound here
+    setState(() {
+      _isAlarmPlaying = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _detectionTimer?.cancel();
+    _controller?.dispose();
+    _stopAlarm();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Drowsiness Detection'),
+        title: const Text('Phát hiện buồn ngủ'),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: FutureBuilder<void>(
-                future: _initializeControllerFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          'Error: ${snapshot.error}',
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-                    if (_controller == null || !_controller!.value.isInitialized) {
-                      return const Center(
-                        child: Text(
-                          'Camera not initialized',
-                          style: TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-                    return CameraPreview(_controller!);
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              ),
-            ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _buildCameraPreview(),
+          ),
+          _buildStatusIndicator(),
+          if (_showRetryButton)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              child: Text(
-                _status,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _status.contains('Error') ? Colors.red : Colors.black,
-                ),
-                textAlign: TextAlign.center,
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: _initializeCamera,
+                child: const Text('Thử lại'),
               ),
             ),
-            if (_processedImage.isNotEmpty)
-              Container(
-                height: 150,
-                margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Image.memory(
-                  base64Decode(_processedImage),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Text(
-                        'Error loading processed image',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraPreview() {
+    if (!_cameraInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CameraPreview(_controller!),
+        ..._boxes.map(_buildDetectionBox).toList(),
+      ],
+    );
+  }
+
+  Widget _buildDetectionBox(DetectionBox box) {
+    return Positioned(
+      left: box.x,
+      top: box.y,
+      child: Container(
+        width: box.width,
+        height: box.height,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: box.label == 'drowsy' ? Colors.red : Colors.green,
+            width: 2,
+          ),
         ),
+        child: Text(
+          '${box.label} ${(box.confidence * 100).toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            backgroundColor: Colors.black.withOpacity(0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIndicator() {
+    Color statusColor = Colors.black;
+    IconData statusIcon = Icons.info;
+    
+    if (_status.contains('Lỗi')) {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+    } else if (_status.contains('Buồn ngủ')) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.warning;
+    } else if (_status.contains('Bình thường')) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: statusColor.withOpacity(0.1),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(statusIcon, color: statusColor),
+          const SizedBox(width: 8),
+          Text(
+            _status,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+            ),
+          ),
+        ],
       ),
     );
   }
