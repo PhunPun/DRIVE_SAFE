@@ -1,3 +1,4 @@
+import 'package:drive_safe/Pages/drowsiness/drowsiness_screen.dart';
 import 'package:drive_safe/apps/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,12 +42,22 @@ class _HomeBodyState extends State<HomeBody> {
                   _isPress = !_isPress;
                 });
               },
-              child: Image.asset(
-                _isPress 
-                    ? 'assets/images/btn_start.png' 
-                    : 'assets/images/btn_stop.png',
-                width: 125,
-                height: 125,
+              child: GestureDetector(
+                onTap: () {
+                    Navigator.push(
+                    context,
+                      MaterialPageRoute(
+                        builder: (context) => DrowsinessScreen(),
+                    ),
+                  );
+                },
+                child: Image.asset(
+                  _isPress 
+                      ? 'assets/images/btn_start.png' 
+                      : 'assets/images/btn_stop.png',
+                  width: 125,
+                  height: 125,
+                ),
               ),
             ),
           ],

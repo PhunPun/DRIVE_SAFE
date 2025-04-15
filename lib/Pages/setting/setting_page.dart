@@ -67,21 +67,10 @@ class SettingPage extends StatelessWidget {
                             },
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-
-                             Navigator.push(
-                              context,
-                                MaterialPageRoute(
-                                  builder: (context) => DrowsinessScreen(),
-                              ),
-                            );
-                          },
-                          child: _buildSettingItem(
-                            context,
-                            iconPath: 'assets/icons/vuong.svg',
-                            title: 'Mức độ nhận diện',
-                          ),
+                        _buildSettingItem(
+                          context,
+                          iconPath: 'assets/icons/vuong.svg',
+                          title: 'Mức độ nhận diện',
                         ),
                       ],
                     ),
