@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
@@ -50,7 +52,7 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
   bool _isAlarmPlaying = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  final String apiUrl = 'http://192.168.5.47:5000/api/detect_drowsiness';
+  final String apiUrl = 'http://192.168.1.91:5000/api/detect_drowsiness';
 
   @override
   void initState() {
@@ -85,7 +87,24 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
       });
     }
   }
+  Future<void> _saveStatusToFirestore(String status) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
+      final userStatusRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('user_status');
+
+      await userStatusRef.add({
+        'status': status,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Lỗi lưu trạng thái vào Firestore: $e');
+    }
+  }
   void _startDetectionLoop() {
     _detectionTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_cameraInitialized && !_isDetecting) {
@@ -121,7 +140,10 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
         if (result['success'] == true) {
           final drowsyDetected = result['drowsy_detected'] ?? false;
           final confidence = result['confidence'] ?? 0.0;
-
+          final detectedStatus = drowsyDetected ? 'drowse' : 'awake';
+          if(detectedStatus == 'drowse'){
+            _saveStatusToFirestore(detectedStatus);
+          }
           setState(() {
             _status = drowsyDetected
                 ? '⚠️ Buồn ngủ phát hiện (${(confidence * 100).toStringAsFixed(1)}%)'

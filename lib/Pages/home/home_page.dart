@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 1;
-
+  String _displayName = 'Người dùng';
+  @override
+  void initState() {
+    super.initState();
+    _loadDisplayName();
+  }
+  Future<void> _loadDisplayName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        setState(() {
+          _displayName = doc['displayName'] ?? 'Người dùng';
+        });
+      }
+    }
+  }
   final List<Widget> _screens = [
     const HistoryPage(),
     const HomeBody(),
@@ -43,7 +60,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
-        title: HomeAppbar(displayName: FirebaseAuth.instance.currentUser?.displayName ?? 'Người dùng')
+        title: HomeAppbar(displayName: _displayName)
 ,
       ),
       body: Stack(

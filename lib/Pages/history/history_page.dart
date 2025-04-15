@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:drive_safe/Pages/history/widgets/time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:drive_safe/apps/theme/theme.dart';
@@ -37,10 +38,20 @@ Widget build(BuildContext context) {
               Expanded(
                 child: ListView(
                   children: [
-                    _buildHistoryItem(
-                      iconPath: 'assets/icons/time.svg',
-                      title: 'Chi tiết thời gian',
-                      isDarkMode: isDarkMode,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(
+                            builder: (context) => Time()
+                          )
+                        );
+                      },
+                      child: _buildHistoryItem(
+                        iconPath: 'assets/icons/time.svg',
+                        title: 'Chi tiết thời gian',
+                        isDarkMode: isDarkMode,
+                      ),
                     ),
                     _buildHistoryItem(
                       iconPath: 'assets/icons/alert.svg',

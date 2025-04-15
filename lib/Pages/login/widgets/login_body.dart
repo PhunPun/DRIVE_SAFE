@@ -3,6 +3,7 @@ import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 import 'package:drive_safe/apps/router/router_name.dart';
 import 'package:drive_safe/service/api_service.dart';
 import 'package:drive_safe/service/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/svg.dart';
@@ -33,36 +34,63 @@ class _LoginBodyState extends State<LoginBody> {
       _isLoginLoading = true;
       _showError = false;
     });
+
     try {
-      final response = await ApiService.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+      // Lấy thông tin email và mật khẩu từ các trường nhập liệu
+      String email = _emailController.text.trim();
+      String password = _passwordController.text.trim();
+
+      // Kiểm tra xem email và mật khẩu có rỗng hay không
+      if (email.isEmpty || password.isEmpty) {
+        setState(() {
+          _showError = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
+        );
+        return;
+      }
+
+      // Thực hiện đăng nhập với Firebase Authentication
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      // Lưu token và chuyển hướng
-      final token = response['token'];
-      debugPrint('Login successful, token: $token');
-      
-      //await SecureStorage.saveToken(token);
-      
-      // Chuyển hướng sau khi đăng nhập thành công
-      if (mounted) {
-        context.goNamed(RouterName.home);
+      // Kiểm tra xem người dùng đã đăng nhập thành công chưa
+      if (userCredential.user != null) {
+        if (mounted) {
+          context.goNamed(RouterName.home); // Chuyển đến màn hình chính
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đăng nhập thành công!')),
+          );
+        }
       }
-    } catch (e) {
-      setState(() => _showError = true);
+    } on FirebaseAuthException catch (e) {
+      // Xử lý lỗi khi đăng nhập
+      setState(() {
+        _showError = true;
+      });
       debugPrint('Login error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng nhập thất bại: ${e.toString()}')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đăng nhập thất bại: ${e.message ?? 'Lỗi không xác định'}')),
+      );
+    } catch (e) {
+      // Xử lý các lỗi khác
+      setState(() {
+        _showError = true;
+      });
+      debugPrint('Login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đăng nhập thất bại: ${e.toString()}')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoginLoading = false);
       }
     }
   }
+
 
   Future<void> _signInWithGoogle() async {
     await _googleAuth.signOutFromGoogle();

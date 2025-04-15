@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -7,21 +8,37 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Bước 1: Đăng nhập bằng Google
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
 
-      // Bước 2: Lấy thông tin xác thực
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // Bước 3: Tạo Firebase credential
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Bước 4: Đăng nhập vào Firebase
-      return await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      // Nếu user không null, lưu thông tin vào Firestore
+      if (user != null) {
+        final userDoc = _firestore.collection('users').doc(user.uid);
+
+        // Kiểm tra nếu user chưa tồn tại thì mới thêm
+        final docSnapshot = await userDoc.get();
+        if (!docSnapshot.exists) {
+          await userDoc.set({
+            'uid': user.uid,
+            'displayName': user.displayName,
+            'email': user.email,
+            'photoURL': user.photoURL,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      return userCredential;
     } catch (e) {
       print("Lỗi đăng nhập Google: $e");
       return null;

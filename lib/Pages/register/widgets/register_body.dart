@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drive_safe/apps/theme/theme.dart';
 import 'package:drive_safe/apps/theme/providers/theme_provider.dart';
 import 'package:drive_safe/apps/router/router_name.dart';
 import 'package:drive_safe/service/api_service.dart';
 import 'package:drive_safe/service/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/svg.dart';
@@ -36,7 +38,6 @@ class _RegisterBodyState extends State<RegisterBody> {
   }
   
   Future<void> _register() async {
-    // Validate input
     if (_nameController.text.isEmpty || 
         _emailController.text.isEmpty || 
         _passwordController.text.isEmpty) {
@@ -46,7 +47,7 @@ class _RegisterBodyState extends State<RegisterBody> {
       });
       return;
     }
-    
+
     if (_passwordController.text != _confirmPasswordController.text) {
       setState(() {
         _showError = true;
@@ -54,30 +55,44 @@ class _RegisterBodyState extends State<RegisterBody> {
       });
       return;
     }
-    
+
     setState(() {
       _isRegisterLoading = true;
       _showError = false;
     });
-    
+
     try {
-      final response = await ApiService.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+      // Đăng ký tài khoản Firebase
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
-      
-      debugPrint('Register successful: $response');
-      
-      if (mounted) {
-        // Chuyển đến màn hình đăng nhập sau khi đăng ký thành công
-        context.goNamed(RouterName.login);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng ký thành công! Vui lòng đăng nhập')),
-        );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Ghi thông tin người dùng vào Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'displayName': _nameController.text.trim(),
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          context.goNamed(RouterName.login);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đăng ký thành công! Vui lòng đăng nhập')),
+          );
+        }
       }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _showError = true;
+        _errorMessage = e.message ?? 'Lỗi không xác định';
+      });
     } catch (e) {
-      debugPrint('Register error: $e');
       setState(() {
         _showError = true;
         _errorMessage = 'Đăng ký thất bại: ${e.toString()}';
@@ -88,6 +103,7 @@ class _RegisterBodyState extends State<RegisterBody> {
       }
     }
   }
+
 
   Future<void> _signInWithGoogle() async {
     await _googleAuth.signOutFromGoogle();
