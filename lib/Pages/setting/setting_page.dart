@@ -1,4 +1,4 @@
-import 'package:drive_safe/Pages/drowsiness/drowsiness_screen.dart';
+import 'package:drive_safe/Pages/setting/widgets/alarm_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -51,10 +51,20 @@ class SettingPage extends StatelessWidget {
                   Expanded(
                     child: ListView(
                       children: [
-                        _buildSettingItem(
-                          context,
-                          iconPath: 'assets/icons/music.svg',
-                          title: 'Âm thanh cảnh báo',
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                                MaterialPageRoute(
+                                  builder: (context) => AlarmSettingsScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildSettingItem(
+                            context,
+                            iconPath: 'assets/icons/music.svg',
+                            title: 'Âm thanh cảnh báo',
+                          ),
                         ),
                         _buildSettingItem(
                           context,

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DetectionBox {
   final double x, y, width, height;
@@ -188,7 +189,9 @@ class _DrowsinessScreenState extends State<DrowsinessScreen> {
     if (_isAlarmPlaying) return;
 
     try {
-      await _audioPlayer.play(AssetSource('sounds/alarm2.mp3'));
+      final prefs = await SharedPreferences.getInstance();
+      final selectedSound = prefs.getString('selected_alarm') ?? 'alarm1.mp3';
+      await _audioPlayer.play(AssetSource('sounds/$selectedSound'));
       setState(() {
         _isAlarmPlaying = true;
       });

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:drive_safe/Pages/history/widgets/time.dart';
+import 'package:drive_safe/Pages/history/widgets/warning_frequency_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:drive_safe/apps/theme/theme.dart';
@@ -53,10 +54,20 @@ Widget build(BuildContext context) {
                         isDarkMode: isDarkMode,
                       ),
                     ),
-                    _buildHistoryItem(
-                      iconPath: 'assets/icons/alert.svg',
-                      title: 'Tần suất cảnh báo',
-                      isDarkMode: isDarkMode,
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WarningFrequencyScreen()
+                          )
+                        );
+                      },
+                      child: _buildHistoryItem(
+                        iconPath: 'assets/icons/alert.svg',
+                        title: 'Tần suất cảnh báo',
+                        isDarkMode: isDarkMode,
+                      ),
                     ),
                   ],
                 ),
